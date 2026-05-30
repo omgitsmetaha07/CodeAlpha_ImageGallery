@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Image Gallery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0e10;
+      --surface: #18181c;
+      --border: #2a2a30;
+      --accent: #e8c97a;
+      --accent2: #c4a55c;
+      --text: #f0ece4;
+      --muted: #7a7a82;
+      --radius: 12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 60px 20px 30px;
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, var(--accent), #fff8e7, var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p {
+      color: var(--muted);
+      margin-top: 10px;
+      font-size: 1rem;
+      font-weight: 300;
+    }
+
+    /* Filter Buttons */
+    .filters {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 20px;
+    }
+
+    .filter-btn {
+      padding: 8px 20px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+
+    /* Gallery Grid */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      padding: 20px 40px 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .gallery-item {
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      aspect-ratio: 4/3;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .gallery-item:hover {
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.5s ease;
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.08);
+    }
+
+    .gallery-item .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      display: flex;
+      align-items: flex-end;
+      padding: 16px;
+    }
+
+    .gallery-item:hover .overlay {
+      opacity: 1;
+    }
+
+    .overlay-text {
+      color: #fff;
+    }
+
+    .overlay-text .title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .overlay-text .category {
+      font-size: 0.75rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+
+    .gallery-item.hidden {
+      display: none;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .lightbox.open { display: flex; }
+
+    .lightbox-inner {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+      animation: fadeScale 0.3s ease;
+    }
+
+    @keyframes fadeScale {
+      from { opacity: 0; transform: scale(0.9); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .lightbox-inner img {
+      max-width: 100%;
+      max-height: 80vh;
+      border-radius: var(--radius);
+      object-fit: contain;
+      display: block;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+    }
+
+    .lightbox-caption {
+      text-align: center;
+      margin-top: 14px;
+      color: var(--text);
+    }
+
+    .lightbox-caption .title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+    }
+
+    .lightbox-caption .category {
+      color: var(--accent);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    .lb-btn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 1.5rem;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      z-index: 1001;
+    }
+
+    .lb-btn:hover { background: var(--accent); color: #000; }
+    #lb-prev { left: 16px; }
+    #lb-next { right: 16px; }
+
+    .lb-close {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1001;
+    }
+
+    .lb-close:hover { background: #c0392b; border-color: #c0392b; }
+
+    @media (max-width: 600px) {
+      .gallery { padding: 16px; gap: 12px; }
+      .lb-btn { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Visual Gallery</h1>
+  <p>Browse stunning photography across categories</p>
+</header>
+
+<div class="filters">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="nature">Nature</button>
+  <button class="filter-btn" data-filter="architecture">Architecture</button>
+  <button class="filter-btn" data-filter="ocean">Ocean</button>
+  <button class="filter-btn" data-filter="city">City</button>
+</div>
+
+<div class="gallery" id="gallery"></div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" id="lb-close">✕</button>
+  <button class="lb-btn" id="lb-prev">&#8249;</button>
+  <div class="lightbox-inner">
+    <img id="lb-img" src="" alt=""/>
+    <div class="lightbox-caption">
+      <div class="title" id="lb-title"></div>
+      <div class="category" id="lb-cat"></div>
+    </div>
+  </div>
+  <button class="lb-btn" id="lb-next">&#8250;</button>
+</div>
+
+<script>
+  const images = [
+    { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800', title: 'Mountain Peaks', cat: 'nature' },
+    { url: 'https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=800', title: 'Forest Path', cat: 'nature' },
+    { url: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800', title: 'Golden Valley', cat: 'nature' },
+    { url: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800', title: 'City Skyline', cat: 'city' },
+    { url: 'https://images.unsplash.com/photo-1444723121867-7a241cacace9?w=800', title: 'Night Lights', cat: 'city' },
+    { url: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800', title: 'Urban Flow', cat: 'city' },
+    { url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800', title: 'Calm Shore', cat: 'ocean' },
+    { url: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800', title: 'Deep Blue', cat: 'ocean' },
+    { url: 'https://images.unsplash.com/photo-1439405326854-014607f694d7?w=800', title: 'Ocean Waves', cat: 'ocean' },
+    { url: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800', title: 'Glass Tower', cat: 'architecture' },
+    { url: 'https://images.unsplash.com/photo-1431576901776-e539bd916ba2?w=800', title: 'Stone Arches', cat: 'architecture' },
+    { url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800', title: 'Alpine Sunset', cat: 'nature' },
+  ];
+
+  const gallery = document.getElementById('gallery');
+  let currentIndex = 0;
+  let filtered = [...images];
+
+  function buildGallery(list) {
+    gallery.innerHTML = '';
+    list.forEach((img, i) => {
+      const item = document.createElement('div');
+      item.className = 'gallery-item';
+      item.dataset.index = i;
+      item.innerHTML = `
+        <img src="${img.url}" alt="${img.title}" loading="lazy"/>
+        <div class="overlay">
+          <div class="overlay-text">
+            <div class="title">${img.title}</div>
+            <div class="category">${img.cat}</div>
+          </div>
+        </div>`;
+      item.addEventListener('click', () => openLightbox(i, list));
+      gallery.appendChild(item);
+    });
+  }
+
+  buildGallery(images);
+
+  // Filter
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const f = btn.dataset.filter;
+      filtered = f === 'all' ? [...images] : images.filter(img => img.cat === f);
+      buildGallery(filtered);
+    });
+  });
+
+  // Lightbox
+  function openLightbox(index, list) {
+    currentIndex = index;
+    updateLightbox(list);
+    document.getElementById('lightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function updateLightbox(list) {
+    const img = list[currentIndex];
+    document.getElementById('lb-img').src = img.url;
+    document.getElementById('lb-title').textContent = img.title;
+    document.getElementById('lb-cat').textContent = img.cat;
+  }
+
+  document.getElementById('lb-close').addEventListener('click', () => {
+    document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow = '';
+  });
+
+  document.getElementById('lb-prev').addEventListener('click', () => {
+    currentIndex = (currentIndex - 1 + filtered.length) % filtered.length;
+    updateLightbox(filtered);
+  });
+
+  document.getElementById('lb-next').addEventListener('click', () => {
+    currentIndex = (currentIndex + 1) % filtered.length;
+    updateLightbox(filtered);
+  });
+
+  document.getElementById('lightbox').addEventListener('click', e => {
+    if (e.target === document.getElementById('lightbox')) {
+      document.getElementById('lightbox').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    const lb = document.getElementById('lightbox');
+    if (!lb.classList.contains('open')) return;
+    if (e.key === 'ArrowRight') { currentIndex = (currentIndex + 1) % filtered.length; updateLightbox(filtered); }
+    if (e.key === 'ArrowLeft')  { currentIndex = (currentIndex - 1 + filtered.length) % filtered.length; updateLightbox(filtered); }
+    if (e.key === 'Escape') { lb.classList.remove('open'); document.body.style.overflow = ''; }
+  });
+</script>
+</body>
+</html>
